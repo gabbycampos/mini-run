@@ -7,7 +7,8 @@ class TimerActive extends React.Component {
         this.state = {
             isActive: true,
             seconds: 0,
-            intervalId: 0
+            intervalId: 0,
+            coordinates: []
         }
         this.startTimer = this.startTimer.bind(this);
         this.decreaseTimer = this.decreaseTimer.bind(this);
@@ -21,6 +22,7 @@ class TimerActive extends React.Component {
         this.setState({
             intervalId: intervalId
         })
+        // call watchLocation function
     }
     decreaseTimer() {
         switch (this.state.seconds) {
@@ -28,11 +30,13 @@ class TimerActive extends React.Component {
                 if (this.props.minutes === 0) {
                     if (this.state.isActive) {
                         this.setState({
+                            ...this.state,
                             isActive: false
                         });
                         this.props.toggleInterval(this.state.isActive);
                     } else {
                         this.setState({
+                            ...this.state,
                             isActive: true
                         });
                         this.props.toggleInterval(this.state.isActive);
@@ -40,6 +44,7 @@ class TimerActive extends React.Component {
                 }
                 this.props.updateTimerMinute()
                 this.setState({
+                    ...this.state,
                     seconds: 59
                 })
                 break;
@@ -67,6 +72,7 @@ class TimerActive extends React.Component {
     getWatchLocation() {
         navigator.geolocation.watchPosition(
             data => {
+                // push coordinates to coordinates array in state
                 console.log(data);
                 console.log(data.coords.latitude)
             }, error => console.log(error)

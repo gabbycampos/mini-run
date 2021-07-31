@@ -1,5 +1,4 @@
 import React from 'react';
-import TimerActive from './TimerActive';
 import TimerSetUp from './TimerSetUp';
 
 class Timer extends React.Component {
@@ -7,112 +6,219 @@ class Timer extends React.Component {
         super();
 
         this.state = {
-            distance: 10,
-            currentSpeed: 5,
-            duration: 20,
-            locations: ['data point', 'data point'],
-            cycleType: 'Run',
-            // same as runTimer
-            minutes: 2,
-
-            cycleNumber: 3,
             walkTimer: 1,
-            runTimer: 2
+            runTimer: 2,
+            cycleNumber: 3,
+            timerCount: 2 * 60,
+            cycleType: 'RUN',
+            runActive: false,
+            coordinates: [],
+
+            distance: '',
+            currentSpeed: '',
+            duration: '',
         }
-        this.onIncreaseWalk = this.onIncreaseWalk.bind(this);
-        this.onDecreaseWalk = this.onDecreaseWalk.bind(this);
-        this.onIncreaseRun = this.onIncreaseRun.bind(this);
-        this.onDecreaseRun = this.onDecreaseRun.bind(this);
-        this.onToggleInterval = this.onToggleInterval.bind(this);
-        this.onUpdateTimerMinute = this.onUpdateTimerMinute.bind(this);
-        this.onStopTimer = this.onStopTimer.bind(this);
-    }
-    
-    onIncreaseWalk() {
-        this.setState(prev => {
-            return {
-                walkTimer: prev.walkTimer + 1
-            }
-        })
-    }
-    onDecreaseWalk() {
-        this.setState(prev => {
-            return {
-                walkTimer: prev.walkTimer - 1
-            }
-        })
-    }
-    onIncreaseRun() {
-        this.setState(prev => {
-            return {
-                runTimer: prev.runTimer + 1,
-                minutes: prev.runTimer + 1
-            }
-        })
-    }
-    onDecreaseRun() {
-        this.setState(prev => {
-            return {
-                runTimer: prev.runTimer - 1,
-                minutes: prev.runTimer - 1
-            }
-        })
+        // loop timer until cycle ends
+        this.loop = undefined;
     }
 
-    onUpdateTimerMinute() {
-        this.setState((prev) => {
-            return {
-                minutes: prev.minutes - 1
-            }
-        })
+    componentWillUnmount() {
+        clearInterval(this.loop);
     }
-    onToggleInterval(isActive) {
+
+    // componentDidMount() {
+    //     // react will fire when component mounts
+    //     // can have it here so it watches geolocation all the time
+    //     navigator.geolocation.watchPosition(
+    //         data => {
+    //             this.setState({
+    //                 ...this.state,
+    //                 currentGeolocation: data.coords
+    //                 // store current in a variable 
+
+    //             })
+    //             // push coordinates to coordinates array in state
+    //             // console.log(data);
+    //             // console.log(data.coords.latitude)
+    //         }, error => console.log(error)
+    //     )
+    // }
+
+    // // then send  whatever data I need to db when run ends
+
+    // hook to handle isActive state
+    handleStart = () => {
+        const { isActive } = this.state;
+
         if (isActive) {
+            clearInterval(this.loop);
+
             this.setState({
-                minutes: this.state.runTimer
+                isActive: false
+            });
+        } else {
+            this.setState({
+                isActive: true
+            });
+
+            this.loop = setInterval(() => {
+                const { timerCount, cycleType, walkTimer, runTimer } = this.state;
+
+                if (timerCount === 0) {
+                    this.setState({
+                        cycleType: (cycleType === 'RUN') ? 'WALK' : 'RUN',
+                        timerCount: (cycleType === 'RUN') ? (walkTimer * 60) : (runTimer * 60)
+                    });
+                } else {
+                    this.setState({
+                        timerCount: timerCount - 1,
+                    });
+                }
+
+            }, 1000);
+        }
+    }
+
+    // stop and reset timer
+    handleStop = () => {
+        this.setState({
+            walkTimer: 1,
+            runTimer: 2,
+            cycleNumber: 3,
+            timerCount: 2 * 60,
+            cycleType: 'RUN',
+            runActive: false
+        });
+
+        clearInterval(this.loop);
+    }
+
+    // handle time conversion
+    convertToTime = (count) => {
+        let minutes = Math.floor(count / 60);
+        let seconds = count % 60;
+
+        minutes = minutes < 10 ? ('0' + minutes) : minutes;
+        seconds = seconds < 10 ? ('0' + seconds) : seconds;
+
+        return `${minutes}:${seconds}`;
+    }
+
+    handleWalkDecrease = () => {
+        const { walkTimer, isActive, cycleType } = this.state;
+        if (walkTimer > 1) {
+            if (!isActive && cycleType === 'WALK') {
+                this.setState({
+                    walkTimer: walkTimer - 1,
+                    timerCount: (walkTimer - 1) * 60
+                })
+            } else {
+                this.setState({
+                    walkTimer: walkTimer - 1
+                });
+            }
+        }
+    }
+    handleWalkIncrease = () => {
+        const { walkTimer, isActive, cycleType } = this.state;
+        if (!isActive && cycleType === 'WALK') {
+            this.setState({
+                walkTimer: walkTimer + 1,
+                timerCount: (walkTimer + 1) * 60
             })
         } else {
             this.setState({
-                minutes: this.state.walkTimer
-            })
+                walkTimer: walkTimer + 1
+            });
         }
     }
-    onStopTimer() {
-        this.setState({
-            minutes: this.state.runTimer
-        })
+    handleRunDecrease = () => {
+        const { runTimer, isActive, cycleType } = this.state;
+        if (runTimer > 1) {
+            if (!isActive && cycleType === 'RUN') {
+                this.setState({
+                    runTimer: runTimer - 1,
+                    timerCount: (runTimer - 1) * 60
+                })
+            } else {
+                this.setState({
+                    runTimer: runTimer - 1
+                });
+            }
+        }
+    }
+    handleRunIncrease = () => {
+        const { runTimer, isActive, cycleType } = this.state;
+        if (!isActive && cycleType === 'RUN') {
+            this.setState({
+                runTimer: runTimer + 1,
+                timerCount: (runTimer + 1) * 60
+            })
+        } else {
+            this.setState({
+                runTimer: runTimer + 1
+            });
+        }
+    }
+    handleCycleDecrease = () => {
+        const { cycleNumber, isActive } = this.state;
+        if (cycleNumber > 1) {
+            if (!isActive) {
+                this.setState({
+                    cycleNumber: cycleNumber - 1,
+                })
+            } else {
+                this.setState({
+                    cycleNumber: cycleNumber - 1
+                });
+            }
+        }
+    }
+    handleCycleIncrease = () => {
+        const { cycleNumber, isActive } = this.state;
+        if (!isActive) {
+            this.setState({
+                cycleNumber: cycleNumber + 1,
+            })
+        } else {
+            this.setState({
+                cycleNumber: cycleNumber + 1
+            });
+        }
     }
 
     render() {
+        const cycleProps = {
+            title: 'Cycle Number',
+            count: this.state.cycleNumber,
+            handleDecrease: this.handleCycleDecrease,
+            handleIncrease: this.handleCycleIncrease
+        }
+        const walkProps = {
+            title: 'Walk Minutes',
+            count: this.state.walkTimer,
+            handleDecrease: this.handleWalkDecrease,
+            handleIncrease: this.handleWalkIncrease
+        }
+        const runProps = {
+            title: 'Run Minutes',
+            count: this.state.runTimer,
+            handleDecrease: this.handleRunDecrease,
+            handleIncrease: this.handleRunIncrease
+        }
+
         return (
             <div>
                 <div>
-                    <TimerSetUp
-                        cycleNumber={`Run Cycles: ${this.state.cycleNumber}`}
-
-                        runTimer={`Run Time: ${this.state.runTimer}`}
-                        increaseRun={this.onIncreaseRun}
-                        decreaseRun={this.onDecreaseRun}
-
-                        walkTimer={`Walk Time: ${this.state.walkTimer}`}
-                        increaseWalk={this.onIncreaseWalk}
-                        decreaseWalk={this.onDecreaseWalk}
-                    />
+                    <h2>{this.state.cycleType}</h2>
+                    <span>{this.convertToTime(this.state.timerCount)}</span>
+                    <button onClick={this.handleStart}>{`${this.state.isActive ? 'Pause' : 'Start'}`}</button>
+                    <button onClick={this.handleStop}>Stop</button>
                 </div>
                 <div>
-                    <TimerActive
-                        minutes={`Minutes: ${this.state.minutes}`} 
-                        walkTimer={this.state.walkTimer}
-                        updateTimerMinute={this.onUpdateTimerMinute}
-                        toggleInterval={this.onToggleInterval}
-                        stopTimer={this.onStopTimer}
-
-                        cycleType={`Cycle: ${this.state.cycleType}`}
-                        distance={`Distance: ${this.state.distance}`}
-                        currentSpeed={`Speed: ${this.state.currentSpeed}`}
-                        duration={`Duration: ${this.state.duration}`}
-                        locations={`Locations: ${this.state.locations}`}
-                    />
+                    <TimerSetUp {...cycleProps} />
+                    <TimerSetUp {...walkProps} />
+                    <TimerSetUp {...runProps} />
                 </div>
             </div>
         )
