@@ -17,6 +17,7 @@ class Timer extends React.Component {
             distance: '',
             currentSpeed: '',
             duration: '',
+            currentGeolocation: '',
         }
         // loop timer until cycle ends
         this.loop = undefined;
@@ -26,25 +27,24 @@ class Timer extends React.Component {
         clearInterval(this.loop);
     }
 
-    // componentDidMount() {
-    //     // react will fire when component mounts
-    //     // can have it here so it watches geolocation all the time
-    //     navigator.geolocation.watchPosition(
-    //         data => {
-    //             this.setState({
-    //                 ...this.state,
-    //                 currentGeolocation: data.coords
-    //                 // store current in a variable 
+    componentDidMount() {
+        // react will fire when component mounts
+        // can have it here so it watches geolocation all the time
+        navigator.geolocation.watchPosition(
+            data => {
+                this.setState({
+                    ...this.state,
+                    currentGeolocation: data.coords
+                    // store current in a variable 
+                });
+                // console.log(this.state.currentGeolocation)
+                // console.log(data);
+                // console.log(data.coords.latitude)
+            }, error => console.log(error)
+        )
+    }
 
-    //             })
-    //             // push coordinates to coordinates array in state
-    //             // console.log(data);
-    //             // console.log(data.coords.latitude)
-    //         }, error => console.log(error)
-    //     )
-    // }
-
-    // // then send  whatever data I need to db when run ends
+    // then send  whatever data I need to db when run ends
 
     // hook to handle isActive state
     handleStart = () => {
@@ -56,23 +56,30 @@ class Timer extends React.Component {
             this.setState({
                 isActive: false
             });
+
         } else {
             this.setState({
                 isActive: true
             });
 
             this.loop = setInterval(() => {
-                const { timerCount, cycleType, walkTimer, runTimer } = this.state;
+                const { timerCount, cycleType, walkTimer, runTimer, cycleNumber, coordinates, currentGeolocation } = this.state;
 
+                if (cycleNumber === 0) {
+                    clearInterval(this.loop);
+                }
                 if (timerCount === 0) {
                     this.setState({
+                        cycleNumber: cycleType === 'WALK' && cycleNumber !== 0 ? cycleNumber - 1 : cycleNumber,
                         cycleType: (cycleType === 'RUN') ? 'WALK' : 'RUN',
-                        timerCount: (cycleType === 'RUN') ? (walkTimer * 60) : (runTimer * 60)
+                        timerCount: (cycleType === 'RUN') ? (walkTimer * 60) : (runTimer * 60),
                     });
                 } else {
                     this.setState({
                         timerCount: timerCount - 1,
+                        coordinates: [...coordinates, currentGeolocation]
                     });
+                    console.log(coordinates);
                 }
 
             }, 1000);
@@ -89,7 +96,6 @@ class Timer extends React.Component {
             cycleType: 'RUN',
             runActive: false
         });
-
         clearInterval(this.loop);
     }
 
@@ -110,11 +116,11 @@ class Timer extends React.Component {
             if (!isActive && cycleType === 'WALK') {
                 this.setState({
                     walkTimer: walkTimer - 1,
-                    timerCount: (walkTimer - 1) * 60
+                    timerCount: (walkTimer - 1) * 60,
                 })
             } else {
                 this.setState({
-                    walkTimer: walkTimer - 1
+                    walkTimer: walkTimer - 1,
                 });
             }
         }
